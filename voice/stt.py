@@ -1,9 +1,28 @@
+import tempfile
 from faster_whisper import WhisperModel
+from config import WHISPER_MODEL
+
 
 model = WhisperModel(
-    "small",
+    WHISPER_MODEL,
     device="cpu",
     compute_type="int8"
 )
 
-print("Whisper model loaded successfully")
+
+async def transcribe_audio(audio_bytes: bytes):
+
+    with tempfile.NamedTemporaryFile(suffix=".wav") as temp_audio:
+        temp_audio.write(audio_bytes)
+        temp_audio.flush()
+
+        segments, info = model.transcribe(
+            temp_audio.name,
+            beam_size=1
+        )
+
+        transcript = " ".join(
+            segment.text for segment in segments
+        )
+
+        return transcript.strip()
