@@ -2,19 +2,19 @@
 <html>
 
 <head>
-    <title>Voice AI Agent</title>
+    <title>Streaming Voice AI</title>
 </head>
 
 <body>
 
-    <h1>Real-Time Voice AI Agent</h1>
+    <h1>Streaming Voice AI Agent</h1>
 
     <button id="startBtn">
-        Start Recording
+        Start Streaming
     </button>
 
     <button id="stopBtn">
-        Stop Recording
+        Stop Streaming
     </button>
 
     <h2>Transcript</h2>
@@ -37,13 +37,11 @@
                 "response"
             )
 
-        let mediaRecorder
-
-        let audioChunks = []
-
         const socket = new WebSocket(
             "ws://localhost:8000/ws"
         )
+
+        let mediaRecorder
 
         socket.onmessage = async (
             event
@@ -53,18 +51,25 @@
                 event.data
             )
 
-            transcriptEl.innerText =
-                data.transcript
+            if (data.transcript) {
 
-            responseEl.innerText =
-                data.response
+                transcriptEl.innerText =
+                    data.transcript
+            }
 
-            const audio = new Audio(
-                "data:audio/mp3;base64," +
-                data.audio_base64
-            )
+            if (data.response) {
 
-            audio.play()
+                responseEl.innerText =
+                    data.response
+
+                const audio =
+                    new Audio(
+                        "data:audio/mp3;base64," +
+                        data.audio_base64
+                    )
+
+                audio.play()
+            }
         }
 
         document.getElementById(
@@ -79,38 +84,28 @@
                     })
 
             mediaRecorder =
-                new MediaRecorder(stream)
-
-            audioChunks = []
+                new MediaRecorder(
+                    stream
+                )
 
             mediaRecorder.ondataavailable =
-                event => {
+                async event => {
 
-                    audioChunks.push(
-                        event.data
-                    )
-                }
+                    if (
+                        event.data.size > 0
+                    ) {
 
-            mediaRecorder.onstop =
-                async () => {
+                        const arrayBuffer =
+                            await event.data
+                                .arrayBuffer()
 
-                    const audioBlob =
-                        new Blob(
-                            audioChunks,
-                            {
-                                type: "audio/wav"
-                            }
+                        socket.send(
+                            arrayBuffer
                         )
-
-                    const arrayBuffer =
-                        await audioBlob.arrayBuffer()
-
-                    socket.send(
-                        arrayBuffer
-                    )
+                    }
                 }
 
-            mediaRecorder.start()
+            mediaRecorder.start(1000)
         }
 
         document.getElementById(

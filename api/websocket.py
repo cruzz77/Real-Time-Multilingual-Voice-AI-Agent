@@ -1,5 +1,9 @@
 from fastapi import WebSocket
+
 import base64
+import tempfile
+import os
+import uuid
 
 from voice.stt import (
     transcribe_audio
@@ -9,12 +13,17 @@ from voice.tts import (
     text_to_speech
 )
 
+from voice.buffer import (
+    audio_buffers
+)
+
 from agent.graph import graph
 
 
 class ConnectionManager:
 
     def __init__(self):
+
         self.active_connections = []
 
     async def connect(
@@ -49,15 +58,55 @@ async def websocket_endpoint(
 
     await manager.connect(websocket)
 
+    connection_id = str(uuid.uuid4())
+
+    audio_buffers[
+        connection_id
+    ] = bytearray()
+
     try:
 
         while True:
 
-            audio_bytes = await websocket.receive_bytes()
-
-            stt_result = await transcribe_audio(
-                audio_bytes
+            audio_chunk = (
+                await websocket.receive_bytes()
             )
+
+            audio_buffers[
+                connection_id
+            ].extend(audio_chunk)
+
+            if len(
+                audio_buffers[
+                    connection_id
+                ]
+            ) < 50000:
+
+                continue
+
+            with tempfile.NamedTemporaryFile(
+                suffix=".webm",
+                delete=False
+            ) as temp_audio:
+
+                temp_audio.write(
+                    audio_buffers[
+                        connection_id
+                    ]
+                )
+
+                temp_audio.flush()
+
+                with open(
+                    temp_audio.name,
+                    "rb"
+                ) as audio_file:
+
+                    stt_result = (
+                        await transcribe_audio(
+                            audio_file.read()
+                        )
+                    )
 
             transcript = stt_result[
                 "transcript"
@@ -66,6 +115,16 @@ async def websocket_endpoint(
             language = stt_result[
                 "language"
             ]
+
+            await websocket.send_json({
+                "transcript": transcript
+            })
+
+            if len(
+                transcript.strip()
+            ) < 15:
+
+                continue
 
             result = await graph.ainvoke({
                 "transcript": transcript,
@@ -90,11 +149,16 @@ async def websocket_endpoint(
                 language
             )
 
-            with open(audio_path, "rb") as audio_file:
+            with open(
+                audio_path,
+                "rb"
+            ) as audio_file:
 
-                encoded_audio = base64.b64encode(
-                    audio_file.read()
-                ).decode("utf-8")
+                encoded_audio = (
+                    base64.b64encode(
+                        audio_file.read()
+                    ).decode("utf-8")
+                )
 
             await websocket.send_json({
                 "transcript": transcript,
@@ -103,6 +167,14 @@ async def websocket_endpoint(
                 "audio_base64": encoded_audio
             })
 
+            audio_buffers[
+                connection_id
+            ] = bytearray()
+
+            os.remove(
+                temp_audio.name
+            )
+
     except Exception as e:
 
         print(e)
@@ -110,3 +182,9 @@ async def websocket_endpoint(
         manager.disconnect(
             websocket
         )
+
+        if connection_id in audio_buffers:
+
+            del audio_buffers[
+                connection_id
+            ]
