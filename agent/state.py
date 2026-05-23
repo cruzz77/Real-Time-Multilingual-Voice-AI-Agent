@@ -1,4 +1,6 @@
-from typing import TypedDict, List
+from typing import TypedDict
+from typing import List
+from typing import Optional
 
 
 class AgentState(TypedDict):
@@ -10,3 +12,15 @@ class AgentState(TypedDict):
     language: str
 
     messages: List[dict]
+
+    intent: Optional[str]
+
+    patient_name: Optional[str]
+
+    doctor_name: Optional[str]
+
+    specialization: Optional[str]
+
+    slot: Optional[str]
+
+    tool_result: Optional[dict]

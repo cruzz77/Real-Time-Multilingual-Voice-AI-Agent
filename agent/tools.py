@@ -1,10 +1,24 @@
 from memory.schemas import (
     SessionLocal,
-    Appointment
+    Appointment,
+    Doctor
 )
 
 
 db = SessionLocal()
+
+
+def get_doctor_by_specialization(
+    specialization: str
+):
+
+    doctor = db.query(Doctor).filter(
+        Doctor.specialization.ilike(
+            f"%{specialization}%"
+        )
+    ).first()
+
+    return doctor
 
 
 def check_availability(slot: str):
@@ -14,10 +28,16 @@ def check_availability(slot: str):
         Appointment.status == "booked"
     ).first()
 
-    if existing:
-        return False
+    return existing is None
 
-    return True
+
+def suggest_alternative_slots():
+
+    return [
+        "tomorrow 6pm",
+        "day after tomorrow 11am",
+        "friday 4pm"
+    ]
 
 
 def book_appointment(
@@ -32,7 +52,8 @@ def book_appointment(
 
         return {
             "success": False,
-            "message": "Slot already booked"
+            "message": "Requested slot unavailable",
+            "alternatives": suggest_alternative_slots()
         }
 
     appointment = Appointment(
@@ -65,7 +86,7 @@ def cancel_appointment(
 
         return {
             "success": False,
-            "message": "No appointment found"
+            "message": "No active appointment found"
         }
 
     appointment.status = "cancelled"
@@ -74,5 +95,5 @@ def cancel_appointment(
 
     return {
         "success": True,
-        "message": "Appointment cancelled"
+        "message": "Appointment cancelled successfully"
     }
