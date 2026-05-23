@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual Environment
+venv/
+
+# Environment Variables
+.env
+
+# Database
+*.db
+
+# Logs
+logs/
+
+# FAISS
+*.faiss
+*.pkl
+
+# macOS
+.DS_Store
+
+# VSCode
+.vscode/
+
+# Testing
+.pytest_cache/
+
+# Whisper Models
+models/
+
+# Audio Files
+*.wav
+*.mp3
+
+# Build
+dist/
+build/
