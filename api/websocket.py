@@ -17,6 +17,10 @@ from voice.buffer import (
     audio_buffers
 )
 
+from agent.session import (
+    active_requests
+)
+
 from agent.graph import graph
 
 
@@ -64,12 +68,26 @@ async def websocket_endpoint(
         connection_id
     ] = bytearray()
 
+    active_requests[
+        connection_id
+    ] = 0
+
     try:
 
         while True:
 
             audio_chunk = (
                 await websocket.receive_bytes()
+            )
+
+            active_requests[
+                connection_id
+            ] += 1
+
+            current_request = (
+                active_requests[
+                    connection_id
+                ]
             )
 
             audio_buffers[
@@ -140,6 +158,11 @@ async def websocket_endpoint(
                 "retrieved_memories": []
             })
 
+            if current_request != active_requests[
+                connection_id
+            ]:
+                continue
+
             response_text = result[
                 "response"
             ]
@@ -148,6 +171,11 @@ async def websocket_endpoint(
                 response_text,
                 language
             )
+
+            if current_request != active_requests[
+                connection_id
+            ]:
+                continue
 
             with open(
                 audio_path,
@@ -186,5 +214,11 @@ async def websocket_endpoint(
         if connection_id in audio_buffers:
 
             del audio_buffers[
+                connection_id
+            ]
+
+        if connection_id in active_requests:
+
+            del active_requests[
                 connection_id
             ]
