@@ -15,11 +15,22 @@ from utils.latency import (
 )
 
 
-model = WhisperModel(
-    WHISPER_MODEL,
-    device="cpu",
-    compute_type="int8"
-)
+model = None
+
+
+def get_model():
+
+    global model
+
+    if model is None:
+
+        model = WhisperModel(
+            WHISPER_MODEL,
+            device="cpu",
+            compute_type="int8"
+        )
+
+    return model
 
 
 async def transcribe_audio(
@@ -30,6 +41,8 @@ async def transcribe_audio(
 
     tracker.start("stt")
 
+    local_model = get_model()
+
     with tempfile.NamedTemporaryFile(
         suffix=".wav"
     ) as temp_audio:
@@ -38,7 +51,7 @@ async def transcribe_audio(
 
         temp_audio.flush()
 
-        segments, info = model.transcribe(
+        segments, info = local_model.transcribe(
             temp_audio.name,
             beam_size=1
         )
