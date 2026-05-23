@@ -1,5 +1,7 @@
 import asyncio
 import websockets
+import json
+import base64
 
 
 async def test():
@@ -16,7 +18,30 @@ async def test():
 
             response = await websocket.recv()
 
-            print(response)
+            data = json.loads(response)
+
+            print(data["transcript"])
+
+            print(data["language"])
+
+            print(data["response"])
+
+            audio_data = base64.b64decode(
+                data["audio_base64"]
+            )
+
+            with open(
+                "response.mp3",
+                "wb"
+            ) as output_audio:
+
+                output_audio.write(
+                    audio_data
+                )
+
+            print(
+                "Audio response saved as response.mp3"
+            )
 
 
 asyncio.run(test())

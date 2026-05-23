@@ -1,7 +1,12 @@
 from fastapi import WebSocket
+import base64
 
 from voice.stt import (
     transcribe_audio
+)
+
+from voice.tts import (
+    text_to_speech
 )
 
 from agent.graph import graph
@@ -76,10 +81,26 @@ async def websocket_endpoint(
                 "retrieved_memories": []
             })
 
+            response_text = result[
+                "response"
+            ]
+
+            audio_path = await text_to_speech(
+                response_text,
+                language
+            )
+
+            with open(audio_path, "rb") as audio_file:
+
+                encoded_audio = base64.b64encode(
+                    audio_file.read()
+                ).decode("utf-8")
+
             await websocket.send_json({
                 "transcript": transcript,
                 "language": language,
-                "response": result["response"]
+                "response": response_text,
+                "audio_base64": encoded_audio
             })
 
     except Exception as e:
