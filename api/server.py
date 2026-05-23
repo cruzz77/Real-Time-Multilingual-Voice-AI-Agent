@@ -7,6 +7,18 @@ from api.websocket import (
     websocket_endpoint
 )
 
+from outbound.campaign import (
+    scheduler
+)
+
+from outbound.reminders import (
+    send_reminders
+)
+
+from outbound.followups import (
+    send_followup
+)
+
 
 app = FastAPI()
 
@@ -15,6 +27,24 @@ app.mount(
     StaticFiles(directory="frontend"),
     name="frontend"
 )
+
+
+@app.on_event("startup")
+async def startup_event():
+
+    scheduler.add_job(
+        send_reminders,
+        "interval",
+        minutes=2
+    )
+
+    scheduler.add_job(
+        send_followup,
+        "interval",
+        minutes=5
+    )
+
+    scheduler.start()
 
 
 @app.get("/")
