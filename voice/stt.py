@@ -6,14 +6,6 @@ from config import (
     WHISPER_MODEL
 )
 
-from voice.language import (
-    normalize_language
-)
-
-from utils.latency import (
-    LatencyTracker
-)
-
 
 model = None
 
@@ -37,23 +29,23 @@ async def transcribe_audio(
     audio_bytes: bytes
 ):
 
-    tracker = LatencyTracker()
-
-    tracker.start("stt")
-
-    local_model = get_model()
+    whisper_model = get_model()
 
     with tempfile.NamedTemporaryFile(
-        suffix=".wav"
+        suffix=".webm"
     ) as temp_audio:
 
-        temp_audio.write(audio_bytes)
+        temp_audio.write(
+            audio_bytes
+        )
 
         temp_audio.flush()
 
-        segments, info = local_model.transcribe(
-            temp_audio.name,
-            beam_size=1
+        segments, info = (
+            whisper_model.transcribe(
+                temp_audio.name,
+                beam_size=1
+            )
         )
 
         transcript = " ".join([
@@ -61,14 +53,11 @@ async def transcribe_audio(
             for segment in segments
         ])
 
-        detected_language = normalize_language(
-            info.language
-        )
-
-    tracker.stop("stt")
-
     return {
-        "transcript": transcript.strip(),
-        "language": detected_language,
-        "latency": tracker.report()
+
+        "transcript":
+            transcript.strip(),
+
+        "language":
+            info.language
     }

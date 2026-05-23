@@ -1,5 +1,5 @@
 import edge_tts
-import uuid
+import tempfile
 
 from config import (
     TTS_VOICE_EN,
@@ -19,7 +19,7 @@ VOICE_MAP = {
 }
 
 
-async def text_to_speech(
+async def generate_tts_audio(
     text: str,
     language: str
 ):
@@ -33,15 +33,25 @@ async def text_to_speech(
         TTS_VOICE_EN
     )
 
-    filename = f"audio_{uuid.uuid4()}.mp3"
-
     communicate = edge_tts.Communicate(
         text=text,
         voice=voice
     )
 
-    await communicate.save(filename)
+    with tempfile.NamedTemporaryFile(
+        suffix=".mp3"
+    ) as temp_audio:
+
+        await communicate.save(
+            temp_audio.name
+        )
+
+        temp_audio.seek(0)
+
+        audio_bytes = (
+            temp_audio.read()
+        )
 
     tracker.stop("tts")
 
-    return filename, tracker.report()
+    return audio_bytes
