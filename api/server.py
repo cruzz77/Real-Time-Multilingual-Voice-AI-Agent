@@ -1,16 +1,35 @@
-from fastapi import FastAPI, WebSocket
-from api.websocket import websocket_endpoint
+from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from fastapi import WebSocket
+
+from api.websocket import (
+    websocket_endpoint
+)
+
 
 app = FastAPI()
+
+app.mount(
+    "/frontend",
+    StaticFiles(directory="frontend"),
+    name="frontend"
+)
 
 
 @app.get("/")
 async def root():
-    return {
-        "message": "Voice AI Agent Running"
-    }
+
+    return FileResponse(
+        "frontend/index.html"
+    )
 
 
 @app.websocket("/ws")
-async def websocket_route(websocket: WebSocket):
-    await websocket_endpoint(websocket)
+async def websocket_route(
+    websocket: WebSocket
+):
+
+    await websocket_endpoint(
+        websocket
+    )

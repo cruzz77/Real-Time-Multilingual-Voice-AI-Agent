@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Voice AI Agent</title>
+</head>
+
+<body>
+
+    <h1>Real-Time Voice AI Agent</h1>
+
+    <button id="startBtn">
+        Start Recording
+    </button>
+
+    <button id="stopBtn">
+        Stop Recording
+    </button>
+
+    <h2>Transcript</h2>
+
+    <p id="transcript"></p>
+
+    <h2>Response</h2>
+
+    <p id="response"></p>
+
+    <script>
+
+        const transcriptEl =
+            document.getElementById(
+                "transcript"
+            )
+
+        const responseEl =
+            document.getElementById(
+                "response"
+            )
+
+        let mediaRecorder
+
+        let audioChunks = []
+
+        const socket = new WebSocket(
+            "ws://localhost:8000/ws"
+        )
+
+        socket.onmessage = async (
+            event
+        ) => {
+
+            const data = JSON.parse(
+                event.data
+            )
+
+            transcriptEl.innerText =
+                data.transcript
+
+            responseEl.innerText =
+                data.response
+
+            const audio = new Audio(
+                "data:audio/mp3;base64," +
+                data.audio_base64
+            )
+
+            audio.play()
+        }
+
+        document.getElementById(
+            "startBtn"
+        ).onclick = async () => {
+
+            const stream =
+                await navigator
+                    .mediaDevices
+                    .getUserMedia({
+                        audio: true
+                    })
+
+            mediaRecorder =
+                new MediaRecorder(stream)
+
+            audioChunks = []
+
+            mediaRecorder.ondataavailable =
+                event => {
+
+                    audioChunks.push(
+                        event.data
+                    )
+                }
+
+            mediaRecorder.onstop =
+                async () => {
+
+                    const audioBlob =
+                        new Blob(
+                            audioChunks,
+                            {
+                                type: "audio/wav"
+                            }
+                        )
+
+                    const arrayBuffer =
+                        await audioBlob.arrayBuffer()
+
+                    socket.send(
+                        arrayBuffer
+                    )
+                }
+
+            mediaRecorder.start()
+        }
+
+        document.getElementById(
+            "stopBtn"
+        ).onclick = () => {
+
+            mediaRecorder.stop()
+        }
+
+    </script>
+
+</body>
+
+</html>
