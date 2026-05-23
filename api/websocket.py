@@ -1,6 +1,9 @@
 from fastapi import WebSocket
 
-from voice.stt import transcribe_audio
+from voice.stt import (
+    transcribe_audio
+)
+
 from agent.graph import graph
 
 
@@ -9,7 +12,10 @@ class ConnectionManager:
     def __init__(self):
         self.active_connections = []
 
-    async def connect(self, websocket: WebSocket):
+    async def connect(
+        self,
+        websocket: WebSocket
+    ):
 
         await websocket.accept()
 
@@ -17,9 +23,13 @@ class ConnectionManager:
             websocket
         )
 
-    def disconnect(self, websocket: WebSocket):
+    def disconnect(
+        self,
+        websocket: WebSocket
+    ):
 
         if websocket in self.active_connections:
+
             self.active_connections.remove(
                 websocket
             )
@@ -40,19 +50,35 @@ async def websocket_endpoint(
 
             audio_bytes = await websocket.receive_bytes()
 
-            transcript = await transcribe_audio(
+            stt_result = await transcribe_audio(
                 audio_bytes
             )
+
+            transcript = stt_result[
+                "transcript"
+            ]
+
+            language = stt_result[
+                "language"
+            ]
 
             result = await graph.ainvoke({
                 "transcript": transcript,
                 "response": "",
-                "language": "en",
-                "messages": []
+                "language": language,
+                "messages": [],
+                "intent": None,
+                "patient_name": "Aditya",
+                "doctor_name": None,
+                "specialization": None,
+                "slot": None,
+                "tool_result": None,
+                "retrieved_memories": []
             })
 
             await websocket.send_json({
                 "transcript": transcript,
+                "language": language,
                 "response": result["response"]
             })
 
@@ -60,4 +86,6 @@ async def websocket_endpoint(
 
         print(e)
 
-        manager.disconnect(websocket)
+        manager.disconnect(
+            websocket
+        )

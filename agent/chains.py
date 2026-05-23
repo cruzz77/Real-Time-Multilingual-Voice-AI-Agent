@@ -1,4 +1,5 @@
 from langchain_groq import ChatGroq
+
 from langchain_core.messages import (
     SystemMessage,
     HumanMessage
@@ -20,7 +21,9 @@ llm = ChatGroq(
 )
 
 
-async def extract_intent(transcript: str):
+async def extract_intent(
+    transcript: str
+):
 
     extraction_prompt = f"""
     Extract structured appointment information.
@@ -40,7 +43,9 @@ async def extract_intent(transcript: str):
     """
 
     response = llm.invoke([
-        HumanMessage(content=extraction_prompt)
+        HumanMessage(
+            content=extraction_prompt
+        )
     ])
 
     content = response.content.strip()
@@ -58,11 +63,25 @@ async def extract_intent(transcript: str):
         }
 
 
-async def generate_response(prompt: str):
+async def generate_response(
+    prompt: str,
+    language: str
+):
+
+    language_instruction = f"""
+    Respond ONLY in {language}.
+    """
 
     response = llm.invoke([
-        SystemMessage(content=SYSTEM_PROMPT),
-        HumanMessage(content=prompt)
+        SystemMessage(
+            content=SYSTEM_PROMPT
+        ),
+        SystemMessage(
+            content=language_instruction
+        ),
+        HumanMessage(
+            content=prompt
+        )
     ])
 
     return response.content

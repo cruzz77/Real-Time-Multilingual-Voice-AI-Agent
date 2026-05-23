@@ -22,6 +22,8 @@ async def chatbot_node(state):
 
     transcript = state["transcript"]
 
+    language = state["language"]
+
     memories = retrieve_memories(
         transcript
     )
@@ -68,7 +70,7 @@ async def chatbot_node(state):
         )
 
     response = await generate_response(
-        f"""
+        prompt=f"""
         User transcript:
         {transcript}
 
@@ -82,7 +84,8 @@ async def chatbot_node(state):
         {tool_result}
 
         Generate a natural conversational response.
-        """
+        """,
+        language=language
     )
 
     save_conversation_memory(
