@@ -9,10 +9,22 @@ from agent.tools import (
     get_doctor_by_specialization
 )
 
+from memory.retrieval import (
+    retrieve_memories
+)
+
+from memory.history import (
+    save_conversation_memory
+)
+
 
 async def chatbot_node(state):
 
     transcript = state["transcript"]
+
+    memories = retrieve_memories(
+        transcript
+    )
 
     extracted = await extract_intent(
         transcript
@@ -60,6 +72,9 @@ async def chatbot_node(state):
         User transcript:
         {transcript}
 
+        Retrieved memories:
+        {memories}
+
         Extracted information:
         {extracted}
 
@@ -68,6 +83,12 @@ async def chatbot_node(state):
 
         Generate a natural conversational response.
         """
+    )
+
+    save_conversation_memory(
+        patient_name="Aditya",
+        transcript=transcript,
+        response=response
     )
 
     state["response"] = response
@@ -81,5 +102,7 @@ async def chatbot_node(state):
     state["slot"] = slot
 
     state["tool_result"] = tool_result
+
+    state["retrieved_memories"] = memories
 
     return state

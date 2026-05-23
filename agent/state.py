@@ -24,3 +24,5 @@ class AgentState(TypedDict):
     slot: Optional[str]
 
     tool_result: Optional[dict]
+
+    retrieved_memories: List[str]
