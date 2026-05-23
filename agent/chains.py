@@ -12,6 +12,10 @@ from config import (
 
 from agent.prompts import SYSTEM_PROMPT
 
+from utils.latency import (
+    LatencyTracker
+)
+
 import json
 
 
@@ -51,6 +55,7 @@ async def extract_intent(
     content = response.content.strip()
 
     try:
+
         return json.loads(content)
 
     except Exception:
@@ -68,6 +73,10 @@ async def generate_response(
     language: str
 ):
 
+    tracker = LatencyTracker()
+
+    tracker.start("llm")
+
     language_instruction = f"""
     Respond ONLY in {language}.
     """
@@ -84,4 +93,9 @@ async def generate_response(
         )
     ])
 
-    return response.content
+    tracker.stop("llm")
+
+    return {
+        "text": response.content,
+        "latency": tracker.report()
+    }

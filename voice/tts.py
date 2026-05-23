@@ -7,6 +7,10 @@ from config import (
     TTS_VOICE_TA
 )
 
+from utils.latency import (
+    LatencyTracker
+)
+
 
 VOICE_MAP = {
     "English": TTS_VOICE_EN,
@@ -19,6 +23,10 @@ async def text_to_speech(
     text: str,
     language: str
 ):
+
+    tracker = LatencyTracker()
+
+    tracker.start("tts")
 
     voice = VOICE_MAP.get(
         language,
@@ -34,4 +42,6 @@ async def text_to_speech(
 
     await communicate.save(filename)
 
-    return filename
+    tracker.stop("tts")
+
+    return filename, tracker.report()

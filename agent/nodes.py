@@ -24,7 +24,7 @@ async def chatbot_node(state):
 
     language = state["language"]
 
-    memories = retrieve_memories(
+    memories, retrieval_latency = retrieve_memories(
         transcript
     )
 
@@ -69,7 +69,7 @@ async def chatbot_node(state):
             patient_name="Aditya"
         )
 
-    response = await generate_response(
+    response_data = await generate_response(
         prompt=f"""
         User transcript:
         {transcript}
@@ -87,6 +87,10 @@ async def chatbot_node(state):
         """,
         language=language
     )
+
+    response = response_data["text"]
+
+    llm_latency = response_data["latency"]
 
     save_conversation_memory(
         patient_name="Aditya",
@@ -107,5 +111,9 @@ async def chatbot_node(state):
     state["tool_result"] = tool_result
 
     state["retrieved_memories"] = memories
+
+    state["retrieval_latency"] = retrieval_latency
+
+    state["llm_latency"] = llm_latency
 
     return state

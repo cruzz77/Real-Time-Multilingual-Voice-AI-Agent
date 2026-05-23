@@ -26,3 +26,7 @@ class AgentState(TypedDict):
     tool_result: Optional[dict]
 
     retrieved_memories: List[str]
+
+    retrieval_latency: Optional[dict]
+
+    llm_latency: Optional[dict]

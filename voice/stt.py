@@ -10,6 +10,10 @@ from voice.language import (
     normalize_language
 )
 
+from utils.latency import (
+    LatencyTracker
+)
+
 
 model = WhisperModel(
     WHISPER_MODEL,
@@ -21,6 +25,10 @@ model = WhisperModel(
 async def transcribe_audio(
     audio_bytes: bytes
 ):
+
+    tracker = LatencyTracker()
+
+    tracker.start("stt")
 
     with tempfile.NamedTemporaryFile(
         suffix=".wav"
@@ -44,7 +52,10 @@ async def transcribe_audio(
             info.language
         )
 
-        return {
-            "transcript": transcript.strip(),
-            "language": detected_language
-        }
+    tracker.stop("stt")
+
+    return {
+        "transcript": transcript.strip(),
+        "language": detected_language,
+        "latency": tracker.report()
+    }

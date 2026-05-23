@@ -155,7 +155,9 @@ async def websocket_endpoint(
                 "specialization": None,
                 "slot": None,
                 "tool_result": None,
-                "retrieved_memories": []
+                "retrieved_memories": [],
+                "retrieval_latency": {},
+                "llm_latency": {}
             })
 
             if current_request != active_requests[
@@ -167,7 +169,7 @@ async def websocket_endpoint(
                 "response"
             ]
 
-            audio_path = await text_to_speech(
+            audio_path, tts_latency = await text_to_speech(
                 response_text,
                 language
             )
@@ -176,6 +178,21 @@ async def websocket_endpoint(
                 connection_id
             ]:
                 continue
+
+            latency_report = {
+                "stt": stt_result["latency"],
+                "retrieval": result[
+                    "retrieval_latency"
+                ],
+                "llm": result[
+                    "llm_latency"
+                ],
+                "tts": tts_latency
+            }
+
+            print("\n")
+            print("LATENCY REPORT")
+            print(latency_report)
 
             with open(
                 audio_path,
@@ -192,7 +209,8 @@ async def websocket_endpoint(
                 "transcript": transcript,
                 "language": language,
                 "response": response_text,
-                "audio_base64": encoded_audio
+                "audio_base64": encoded_audio,
+                "latency": latency_report
             })
 
             audio_buffers[
