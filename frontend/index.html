@@ -37,8 +37,13 @@
                 "response"
             )
 
+        const protocol =
+            window.location.protocol === "https:"
+                ? "wss:"
+                : "ws:"
+
         const socket = new WebSocket(
-            "ws://localhost:8000/ws"
+            `${protocol}//${window.location.host}/ws`
         )
 
         let mediaRecorder
