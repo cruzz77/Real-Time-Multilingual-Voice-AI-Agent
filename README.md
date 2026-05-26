@@ -4,12 +4,6 @@ A production-style multilingual conversational AI system supporting realtime voi
 
 ---
 
-# 🚀 Live Demo
-
-https://real-time-multilingual-voice-ai-agent-o6uo.onrender.com
-
----
-
 # ✨ Features
 
 ## 🎤 Real-Time Voice Streaming
