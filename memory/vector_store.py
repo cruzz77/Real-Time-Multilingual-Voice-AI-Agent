@@ -4,27 +4,15 @@ from memory.embeddings import (
     embedding_model
 )
 
-from config import (
-    FAISS_INDEX_PATH
+
+texts = [
+    "User prefers evening appointments",
+    "User speaks Hindi",
+    "User previously booked dermatologist appointment"
+]
+
+
+vector_store = FAISS.from_texts(
+    texts,
+    embedding_model
 )
-
-import os
-
-
-def load_vector_store():
-
-    if os.path.exists(FAISS_INDEX_PATH):
-
-        return FAISS.load_local(
-            FAISS_INDEX_PATH,
-            embedding_model,
-            allow_dangerous_deserialization=True
-        )
-
-    return FAISS.from_texts(
-        ["initial memory"],
-        embedding_model
-    )
-
-
-vector_store = load_vector_store()

@@ -2,55 +2,194 @@
 <html>
 
 <head>
-    <title>Streaming Voice AI</title>
+
+    <title>
+        Real-Time Voice AI
+    </title>
+
+    <style>
+
+        body {
+
+            margin: 0;
+
+            font-family: Arial, sans-serif;
+
+            background: #0f172a;
+
+            color: white;
+        }
+
+        .container {
+
+            max-width: 900px;
+
+            margin: auto;
+
+            padding: 40px;
+        }
+
+        h1 {
+
+            text-align: center;
+
+            margin-bottom: 40px;
+        }
+
+        .controls {
+
+            display: flex;
+
+            justify-content: center;
+
+            gap: 20px;
+
+            margin-bottom: 30px;
+        }
+
+        button {
+
+            padding: 14px 24px;
+
+            border: none;
+
+            border-radius: 10px;
+
+            cursor: pointer;
+
+            font-size: 16px;
+
+            font-weight: bold;
+        }
+
+        #startBtn {
+
+            background: #10b981;
+
+            color: white;
+        }
+
+        #stopBtn {
+
+            background: #ef4444;
+
+            color: white;
+        }
+
+        .card {
+
+            background: #1e293b;
+
+            padding: 25px;
+
+            border-radius: 16px;
+
+            margin-bottom: 20px;
+        }
+
+        h2 {
+
+            margin-top: 0;
+
+            color: #38bdf8;
+        }
+
+        #status {
+
+            text-align: center;
+
+            margin-bottom: 20px;
+
+            color: #facc15;
+        }
+
+    </style>
+
 </head>
 
 <body>
 
-    <h1>Real-Time Voice AI Agent</h1>
+    <div class="container">
 
-    <button id="startBtn">
-        Start Streaming
-    </button>
+        <h1>
+            🎙️ Real-Time Multilingual Voice AI
+        </h1>
 
-    <button id="stopBtn">
-        Stop Streaming
-    </button>
+        <div id="status">
+            Idle
+        </div>
 
-    <h2>Transcript</h2>
+        <div class="controls">
 
-    <p id="transcript"></p>
+            <button id="startBtn">
+                Start Streaming
+            </button>
 
-    <h2>Response</h2>
+            <button id="stopBtn">
+                Stop Streaming
+            </button>
 
-    <p id="response"></p>
+        </div>
 
-    <script>
+        <div class="card">
 
-        const transcriptEl =
-            document.getElementById(
-                "transcript"
-            )
+            <h2>
+                Transcript
+            </h2>
 
-        const responseEl =
-            document.getElementById(
-                "response"
-            )
+            <p id="transcript">
+                Waiting...
+            </p>
 
-        const protocol =
-            window.location.protocol === "https:"
-                ? "wss:"
-                : "ws:"
+        </div>
 
-        const socket = new WebSocket(
-            `${protocol}//${window.location.host}/ws`
+        <div class="card">
+
+            <h2>
+                AI Response
+            </h2>
+
+            <p id="response">
+                Waiting...
+            </p>
+
+        </div>
+
+    </div>
+<script>
+
+    const transcriptEl =
+        document.getElementById(
+            "transcript"
+        )
+
+    const responseEl =
+        document.getElementById(
+            "response"
+        )
+
+    const statusEl =
+        document.getElementById(
+            "status"
+        )
+
+    const socket = new WebSocket(
+        "ws://localhost:8000/ws"
         )
 
         let mediaRecorder
 
-        let currentAudio = null
+        let audioChunks = []
 
-        socket.onmessage = async (
+        let stream
+
+        socket.onopen = () => {
+
+            statusEl.innerText =
+                "Connected"
+        }
+
+        socket.onmessage = (
             event
         ) => {
 
@@ -68,28 +207,28 @@
 
                 responseEl.innerText =
                     data.response
-
-                if (currentAudio) {
-
-                    currentAudio.pause()
-
-                    currentAudio.currentTime = 0
-                }
-
-                currentAudio = new Audio(
-                    "data:audio/mp3;base64," +
-                    data.audio_base64
-                )
-
-                currentAudio.play()
             }
+        }
+
+        socket.onerror = () => {
+
+            statusEl.innerText =
+                "WebSocket Error"
         }
 
         document.getElementById(
             "startBtn"
         ).onclick = async () => {
 
-            const stream =
+            transcriptEl.innerText =
+                "Listening..."
+
+            responseEl.innerText =
+                "Waiting..."
+
+            audioChunks = []
+
+            stream =
                 await navigator
                     .mediaDevices
                     .getUserMedia({
@@ -102,41 +241,66 @@
                 )
 
             mediaRecorder.ondataavailable =
-                async event => {
+                event => {
 
                     if (
                         event.data.size > 0
                     ) {
 
-                        if (currentAudio) {
-
-                            currentAudio.pause()
-
-                            currentAudio.currentTime = 0
-                        }
-
-                        const arrayBuffer =
-                            await event.data
-                                .arrayBuffer()
-
-                        socket.send(
-                            arrayBuffer
+                        audioChunks.push(
+                            event.data
                         )
                     }
                 }
 
-            mediaRecorder.start(1000)
+            mediaRecorder.onstop =
+                async () => {
+
+                    const audioBlob =
+                        new Blob(
+                            audioChunks,
+                            {
+                                type: "audio/webm"
+                            }
+                        )
+
+                    const arrayBuffer =
+                        await audioBlob
+                            .arrayBuffer()
+
+                    socket.send(
+                        arrayBuffer
+                    )
+
+                    statusEl.innerText =
+                        "Processing..."
+                }
+
+            mediaRecorder.start()
+
+            statusEl.innerText =
+                "Recording..."
         }
 
         document.getElementById(
             "stopBtn"
         ).onclick = () => {
 
-            mediaRecorder.stop()
+            if (mediaRecorder) {
+
+                mediaRecorder.stop()
+
+                stream.getTracks()
+                    .forEach(
+                        track => track.stop()
+                    )
+
+                statusEl.innerText =
+                    "Stopped"
+            }
         }
 
     </script>
-
 </body>
 
 </html>

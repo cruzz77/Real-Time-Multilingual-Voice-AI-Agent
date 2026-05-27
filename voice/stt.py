@@ -6,30 +6,21 @@ from config import (
     WHISPER_MODEL
 )
 
+from voice.language import (
+    normalize_language
+)
 
-model = None
 
-
-def get_model():
-
-    global model
-
-    if model is None:
-
-        model = WhisperModel(
-            WHISPER_MODEL,
-            device="cpu",
-            compute_type="int8"
-        )
-
-    return model
+model = WhisperModel(
+    WHISPER_MODEL,
+    device="cpu",
+    compute_type="int8"
+)
 
 
 async def transcribe_audio(
     audio_bytes: bytes
 ):
-
-    whisper_model = get_model()
 
     with tempfile.NamedTemporaryFile(
         suffix=".webm"
@@ -42,14 +33,17 @@ async def transcribe_audio(
         temp_audio.flush()
 
         segments, info = (
-            whisper_model.transcribe(
+            model.transcribe(
                 temp_audio.name,
-                beam_size=1
+                beam_size=1,
+                vad_filter=True
             )
         )
 
         transcript = " ".join([
+
             segment.text
+
             for segment in segments
         ])
 
@@ -59,5 +53,7 @@ async def transcribe_audio(
             transcript.strip(),
 
         "language":
-            info.language
+            normalize_language(
+                info.language
+            )
     }

@@ -1,25 +1,25 @@
-from langgraph.graph import StateGraph
-from langgraph.graph import START, END
-
-from agent.state import AgentState
-from agent.nodes import chatbot_node
-
-
-builder = StateGraph(AgentState)
-
-builder.add_node(
-    "chatbot",
-    chatbot_node
+from memory.retrieval import (
+    retrieve_memories
 )
 
-builder.add_edge(
-    START,
-    "chatbot"
+from agent.chains import (
+    generate_response
 )
 
-builder.add_edge(
-    "chatbot",
-    END
-)
 
-graph = builder.compile()
+async def run_agent(
+    transcript: str,
+    language: str
+):
+
+    memories = retrieve_memories(
+        transcript
+    )
+
+    response = await generate_response(
+        transcript,
+        language,
+        memories
+    )
+
+    return response

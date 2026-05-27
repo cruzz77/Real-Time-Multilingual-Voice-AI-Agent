@@ -10,13 +10,9 @@ from config import (
     MODEL_NAME
 )
 
-from agent.prompts import SYSTEM_PROMPT
-
-from utils.latency import (
-    LatencyTracker
+from agent.prompts import (
+    SYSTEM_PROMPT
 )
-
-import json
 
 
 llm = ChatGroq(
@@ -25,77 +21,29 @@ llm = ChatGroq(
 )
 
 
-async def extract_intent(
-    transcript: str
-):
-
-    extraction_prompt = f"""
-    Extract structured appointment information.
-
-    Return ONLY valid JSON.
-
-    Example:
-    {{
-        "intent": "book",
-        "doctor_name": "",
-        "specialization": "Dermatologist",
-        "slot": "tomorrow evening"
-    }}
-
-    User:
-    {transcript}
-    """
-
-    response = llm.invoke([
-        HumanMessage(
-            content=extraction_prompt
-        )
-    ])
-
-    content = response.content.strip()
-
-    try:
-
-        return json.loads(content)
-
-    except Exception:
-
-        return {
-            "intent": None,
-            "doctor_name": None,
-            "specialization": None,
-            "slot": None
-        }
-
-
 async def generate_response(
-    prompt: str,
-    language: str
+    transcript: str,
+    language: str,
+    memories
 ):
 
-    tracker = LatencyTracker()
-
-    tracker.start("llm")
-
-    language_instruction = f"""
-    Respond ONLY in {language}.
-    """
-
     response = llm.invoke([
+
         SystemMessage(
             content=SYSTEM_PROMPT
         ),
-        SystemMessage(
-            content=language_instruction
-        ),
+
         HumanMessage(
-            content=prompt
+            content=f"""
+            User Input:
+            {transcript}
+
+            Retrieved Memories:
+            {memories}
+
+            Respond ONLY in {language}.
+            """
         )
     ])
 
-    tracker.stop("llm")
-
-    return {
-        "text": response.content,
-        "latency": tracker.report()
-    }
+    return response.content

@@ -1,18 +1,19 @@
-import base64
+import json
 
 from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 from fastapi import WebSocket
+from fastapi.responses import FileResponse
+
+from voice.stt import (
+    transcribe_audio
+)
+
+from agent.graph import (
+    run_agent
+)
 
 
 app = FastAPI()
-
-app.mount(
-    "/frontend",
-    StaticFiles(directory="frontend"),
-    name="frontend"
-)
 
 
 @app.get("/")
@@ -38,18 +39,6 @@ async def websocket_endpoint(
                 await websocket.receive_bytes()
             )
 
-            from voice.stt import (
-                transcribe_audio
-            )
-
-            from agent.graph import (
-                run_agent
-            )
-
-            from voice.tts import (
-                generate_tts_audio
-            )
-
             stt_result = (
                 await transcribe_audio(
                     audio_bytes
@@ -59,6 +48,10 @@ async def websocket_endpoint(
             transcript = (
                 stt_result["transcript"]
             )
+
+            if not transcript:
+
+                continue
 
             language = (
                 stt_result["language"]
@@ -71,33 +64,20 @@ async def websocket_endpoint(
                 )
             )
 
-            audio_response = (
-                await generate_tts_audio(
-                    ai_response,
-                    language
-                )
+            await websocket.send_text(
+
+                json.dumps({
+
+                    "transcript":
+                        transcript,
+
+                    "language":
+                        language,
+
+                    "response":
+                        ai_response
+                })
             )
-
-            audio_base64 = (
-                base64.b64encode(
-                    audio_response
-                ).decode("utf-8")
-            )
-
-            await websocket.send_json({
-
-                "transcript":
-                    transcript,
-
-                "language":
-                    language,
-
-                "response":
-                    ai_response,
-
-                "audio_base64":
-                    audio_base64
-            })
 
     except Exception as e:
 
